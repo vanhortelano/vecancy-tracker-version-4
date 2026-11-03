@@ -1,0 +1,39 @@
+{
+  "functions": {
+    "source": "functions",
+    "runtime": "python313"
+  },
+  "firestore": [
+    {
+      "database": "(default)",
+      "rules": "firestore.rules"
+    },
+    {
+      "database": "central",
+      "rules": "central.rules"
+    }
+  ],
+  "hosting": {
+    "public": ".",
+    "rewrites": [
+      {
+        "source": "/api/**",
+        "function": {
+          "functionId": "assistant",
+          "region": "us-central1"
+        }
+      }
+    ],
+    "ignore": [
+      "firebase.json",
+      "functions/**",
+      "**/.*",
+      "**/node_modules/**",
+      "seed-data.js",
+      "practice.html",
+      "SETUP-GUIDE.md",
+      "firestore.rules",
+      "*.md"
+    ]
+  }
+}

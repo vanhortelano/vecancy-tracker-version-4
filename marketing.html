@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dormitory Directory</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="central-ui.css">
+</head>
+<body>
+
+<div class="auth" id="authView" hidden>
+  <aside class="auth-hero">
+    <div class="brand"><span class="logo" id="heroLogo"></span><div><b>TERRINSPROJECT</b><small>Dormitory Management System</small></div></div>
+    <div>
+      <h2>Find an available bed, fast.</h2>
+      <p>Browse every participating dormitory with live vacancy counts, locations and availability by gender, resident type and aircon.</p>
+      <div class="feat" id="feat"></div>
+    </div>
+    <small style="opacity:.6">Resident names and personal details are never shown.</small>
+  </aside>
+  <section class="auth-form"><div class="auth-box">
+    <div style="display:flex;justify-content:space-between;align-items:center"><span class="chip" style="background:var(--acc-soft);color:var(--acc)">MARKETING VIEWER</span><button class="btn theme-btn" id="themeA" type="button" aria-label="Toggle theme"></button></div>
+    <h1 style="margin-top:18px">Sign in to the directory</h1><p class="sub">View-only access to approved dormitory summaries.</p>
+    <button class="btn google" id="googleBtn" type="button"><svg class="i" viewBox="0 0 24 24" style="fill:currentColor;stroke:none" id="gIco"></svg>Continue with Google</button>
+    <div class="or">or use email</div>
+    <div class="field"><label for="email">Email address</label><input id="email" type="email" autocomplete="username" placeholder="you@example.com"></div>
+    <div class="field"><label for="pw">Password</label><input id="pw" type="password" autocomplete="current-password" placeholder="Enter password"></div>
+    <button class="btn pri full" id="signInBtn" type="button" style="margin-top:20px">Sign in</button>
+    <div class="msg" id="authMsg" role="status"></div>
+    <div style="display:flex;justify-content:space-between"><button class="link" id="forgotBtn" type="button">Forgot password?</button><a class="link" href="index.html">← Role selection</a></div>
+  </div></section>
+</div>
+
+<div style="min-height:100vh;display:grid;place-items:center;padding:20px" id="errView" hidden>
+  <div class="notice"><h1 id="errTitle">Directory unavailable</h1><p class="det" id="errText" style="margin:10px 0 18px"></p><button class="btn full" id="errOut" type="button">Sign out</button></div>
+</div>
+
+<div id="app" hidden>
+  <header class="bar">
+    <div class="brand" style="color:var(--ink)"><span class="logo" id="topLogo" style="background:linear-gradient(135deg,var(--acc),var(--acc2));color:#fff"></span><div><h1 style="font-size:18px">Dormitory Directory</h1></div></div>
+    <span class="sp"></span><span class="live"><i></i>Live</span>
+    <button class="btn theme-btn" id="themeB" type="button" aria-label="Toggle theme"></button>
+    <button class="btn sm" id="outBtn" type="button">Sign out</button>
+  </header>
+  <div class="page">
+    <div class="hero"><h1>Find your dormitory</h1><p>Live availability from every participating branch. Updated automatically.</p></div>
+    <div class="stats" id="stats"></div>
+    <div class="tools">
+      <label class="search"><span id="sIco"></span><input id="q" type="search" placeholder="Search by name or city" aria-label="Search dormitories"></label>
+      <select class="btn" id="sort" aria-label="Sort"><option value="vac">Most vacancies</option><option value="name">Name A–Z</option></select>
+    </div>
+    <div class="tools" id="filters" role="group" aria-label="Filters"></div>
+    <div id="list"></div>
+  </div>
+</div>
+
+<script src="firebase-config.js"></script>
+<script src="central-ui.js"></script>
+<script type="module">
+import {initializeApp} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {getAuth,onAuthStateChanged,signInWithEmailAndPassword,signInWithPopup,GoogleAuthProvider,sendPasswordResetEmail,signOut,setPersistence,browserSessionPersistence} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import {getFirestore,collection,onSnapshot} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const {$,esc,icon,authErr,dormCard}=CUI;
+const show=v=>["authView","errView","app"].forEach(id=>$(id).hidden=id!==v);
+const say=(t,err)=>{$("authMsg").textContent=t;$("authMsg").classList.toggle("err",!!err)};
+CUI.theme($("themeA"));CUI.theme($("themeB"));
+$("heroLogo").innerHTML=$("topLogo").innerHTML=icon("building");$("sIco").innerHTML=icon("search");
+$("gIco").innerHTML=icon("google").replace(/<svg[^>]*>|<\/svg>/g,"");
+$("feat").innerHTML=[["bed","Live vacant and occupied bed counts"],["pin","Browse by location"],["users","Filter by gender, student or reviewee, and aircon"]].map(([i,t])=>`<div><span>${icon(i)}</span>${t}</div>`).join("");
+
+const cfg=window.FIREBASE_CONFIG;
+if(!cfg||cfg.apiKey==="YOUR_API_KEY"){show("errView");$("errTitle").textContent="Setup needed";$("errText").textContent="firebase-config.js has no Firebase settings yet.";$("errOut").hidden=true;throw new Error("no config")}
+const app=initializeApp(cfg),auth=getAuth(app),db=getFirestore(app,"central");
+let unsub=null,items=[],loaded=false,painted=false,filter="all",first=true;
+
+$("signInBtn").onclick=async()=>{const e=$("email").value.trim(),p=$("pw").value;if(!e||!p)return say("Enter your email and password.",1);try{await setPersistence(auth,browserSessionPersistence);await signInWithEmailAndPassword(auth,e,p)}catch(x){say(authErr(x),1)}};
+$("pw").onkeydown=e=>{if(e.key==="Enter")$("signInBtn").click()};
+$("googleBtn").onclick=async()=>{try{await setPersistence(auth,browserSessionPersistence);await signInWithPopup(auth,new GoogleAuthProvider())}catch(x){say(authErr(x),1)}};
+$("forgotBtn").onclick=async()=>{const e=$("email").value.trim();if(!e)return say("Enter your email first.",1);try{await sendPasswordResetEmail(auth,e);say("Password reset email sent.")}catch(x){say(authErr(x),1)}};
+const out=()=>signOut(auth);$("outBtn").onclick=out;$("errOut").onclick=out;
+
+onAuthStateChanged(auth,u=>{
+  if(unsub){unsub();unsub=null}items=[];loaded=false;painted=false;
+  if(!u)return show("authView");
+  show("app");render();
+  unsub=onSnapshot(collection(db,"directory"),snap=>{items=snap.docs.map(d=>({id:d.id,...d.data()}));loaded=true;render()},e=>{
+    $("errTitle").textContent="Directory unavailable";
+    $("errText").textContent="Could not read the directory ("+(e.code||e.message)+"). The central database may not be set up yet.";show("errView")});
+});
+
+const FILTERS=[["all","All"],["vac","Has vacancy"],["male","Male"],["female","Female"],["student","Student"],["reviewee","Reviewee"],["ac","Aircon"],["nonac","Non-aircon"]];
+const key={vac:"vacant",male:"maleVacant",female:"femaleVacant",student:"studentVacant",reviewee:"revieweeVacant",ac:"acVacant",nonac:"nonAcVacant"};
+$("filters").innerHTML=FILTERS.map(([k,t])=>`<button class="chip-f" data-f="${k}">${t}</button>`).join("");
+$("filters").onclick=e=>{const b=e.target.closest("[data-f]");if(b){filter=b.dataset.f;painted=true;render()}};
+$("q").oninput=()=>{painted=true;render()};$("sort").onchange=()=>{painted=true;render()};
+
+function render(){
+  document.querySelectorAll("[data-f]").forEach(b=>b.classList.toggle("on",b.dataset.f===filter));
+  const sum=k=>items.reduce((a,s)=>a+(s[k]||0),0),cities=new Set(items.map(s=>(s.location||"").trim().toLowerCase()).filter(Boolean)).size;
+  const st=(i,c,n,t)=>`<div class="stat"><span class="ico ${c}">${icon(i)}</span><div><b>${n}</b><span>${t}</span></div></div>`;
+  $("stats").innerHTML=st("building","",items.length,"Dormitories listed")+st("bed","r",sum("vacant"),"Vacant beds available")+st("pin","a",cities,"Locations");
+  if(!loaded){$("list").innerHTML=`<div class="cards"><div class="sk"></div><div class="sk"></div><div class="sk"></div></div>`;return}
+  const term=$("q").value.trim().toLowerCase();
+  let l=items.filter(s=>(!term||(s.dormName+" "+s.location).toLowerCase().includes(term))&&(filter==="all"||(s[key[filter]]||0)>0));
+  l.sort($("sort").value==="name"?(a,b)=>a.dormName.localeCompare(b.dormName):(a,b)=>b.vacant-a.vacant||a.dormName.localeCompare(b.dormName));
+  const rise=first;first=false;
+  $("list").innerHTML=l.length?`<div class="cards">${l.map(s=>dormCard(s,s,"",rise)).join("")}</div>`
+    :`<div class="empty">${icon("search")}<div><b>${items.length?"No dormitories match":"No dormitories are listed yet"}</b></div>${items.length?"Try a different search or filter.":"Dormitories appear here after their Branch Admin approves publishing."}</div>`;
+}
+</script>
+</body>
+</html>

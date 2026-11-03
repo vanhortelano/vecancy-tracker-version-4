@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Super Admin — Dormitory Management</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="central-ui.css">
+</head>
+<body>
+
+<!-- sign in -->
+<div class="auth" id="authView" hidden>
+  <aside class="auth-hero">
+    <div class="brand"><span class="logo" id="heroLogo"></span><div><b>TERRINSPROJECT</b><small>Dormitory Management System</small></div></div>
+    <div>
+      <h2>One command center for every dormitory.</h2>
+      <p>Connect independent branches, request permission, and watch vacancies and trends in one place.</p>
+      <div class="feat" id="feat"></div>
+    </div>
+    <small style="opacity:.6">Branches stay in control: nothing is shared without their approval.</small>
+  </aside>
+  <section class="auth-form"><div class="auth-box">
+    <div style="display:flex;justify-content:space-between;align-items:center"><span class="chip approved" style="background:var(--amber-bg);color:var(--amber)">SUPER ADMIN PORTAL</span><button class="btn theme-btn" id="themeA" type="button" aria-label="Toggle theme"></button></div>
+    <h1 style="margin-top:18px">Welcome back</h1><p class="sub">Central Dormitory Management System</p>
+    <button class="btn google" id="googleBtn" type="button"><svg class="i" viewBox="0 0 24 24" style="fill:currentColor;stroke:none" id="gIco"></svg>Continue with Google</button>
+    <div class="or">or use email</div>
+    <div class="field"><label for="email">Email address</label><input id="email" type="email" autocomplete="username" placeholder="Enter your authorized email"></div>
+    <div class="field"><label for="pw">Password</label><input id="pw" type="password" autocomplete="current-password" placeholder="Enter password"></div>
+    <button class="btn pri full" id="signInBtn" type="button" style="margin-top:20px">Sign in</button>
+    <div class="msg" id="authMsg" role="status"></div>
+    <div style="display:flex;justify-content:space-between"><button class="link" id="forgotBtn" type="button">Forgot password?</button><a class="link" href="index.html">← Role selection</a></div>
+    <p class="det" style="margin-top:16px">Restricted to authorized Super Admin accounts.</p>
+  </div></section>
+</div>
+
+<!-- signed in but not allowed / setup problem -->
+<div style="min-height:100vh;display:grid;place-items:center;padding:20px" id="deniedView" hidden>
+  <div class="notice">
+    <h1 id="deniedTitle">Not a Super Admin</h1>
+    <p class="det" id="deniedText" style="margin-top:10px"></p>
+    <code class="uid" id="deniedUid"></code>
+    <div id="deniedSteps" hidden>
+      <ol class="steps">
+        <li><b>Open the Firebase console</b> with the blue button below. You land on <i>Build → Firestore Database</i>. You will see your existing database named <b>(default)</b>. Leave it alone.</li>
+        <li><b>Create a second database.</b> At the top, click the database dropdown that says <b>(default)</b> and choose <b>Add database</b>.</li>
+        <li><b>Name it exactly <code>central</code></b> (lowercase), in the <b>Database ID</b> box. Pick the same location as your default database. You can't change it later. Choose <b>Start in production mode</b>, then <b>Create</b> and wait about a minute.</li>
+        <li><b>Publish the rules.</b> Check the dropdown now says <b>central</b>. Open the <b>Rules</b> tab, select everything in the editor and delete it. Press <b>Copy security rules</b> below, paste, then click <b>Publish</b>.</li>
+        <li><b>Come back here and press Reload.</b> You should now see "Not a Super Admin" with a long user ID. That is expected, and the next step fixes it.</li>
+        <li><b>Add yourself.</b> In the console, with <b>central</b> selected, go to the <b>Data</b> tab → <b>Start collection</b>. Collection ID: <code>superAdmins</code>. Document ID: paste your user ID (don't use Auto-ID). Add one field: <code>email</code> (string) = your email. Save, then reload this page.</li>
+      </ol>
+      <p class="det">If the console asks you to upgrade to the Blaze (paid) plan before adding a second database, stop and tell me. I can switch the Super Admin data into your existing database instead.</p>
+      <a class="btn pri full" id="openConsole" target="_blank" rel="noopener">Open Firestore in Firebase console</a>
+      <button class="btn full" id="copyRules" type="button" style="margin-top:10px">Copy security rules</button>
+      <button class="btn full" id="reloadBtn" type="button" style="margin-top:10px">I've done it. Reload</button>
+    </div>
+    <button class="btn full" id="deniedOut" type="button" style="margin-top:10px">Sign out</button>
+  </div>
+</div>
+
+<!-- dashboard -->
+<div class="shell" id="dash" hidden>
+  <aside class="side">
+    <div class="brand"><span class="logo" id="sideLogo"></span><div><b>TERRINSPROJECT</b><small>Super Admin</small></div></div>
+    <nav class="nav" id="nav"></nav>
+    <span class="sp"></span>
+    <div class="me" id="who"></div>
+  </aside>
+  <div class="main">
+    <header class="bar">
+      <h1 id="title">Overview</h1><span class="sp"></span>
+      <span class="live"><i></i>Live</span>
+      <button class="btn theme-btn" id="themeB" type="button" aria-label="Toggle theme"></button>
+      <button class="btn sm" id="outBtn" type="button">Sign out</button>
+    </header>
+    <div class="page">
+      <section id="tab-overview"></section>
+      <section id="tab-dorms" hidden>
+        <div class="panel">
+          <h2>Connect an existing dormitory</h2>
+          <p class="sub">Ask the Branch Admin for a one-time pairing code (Central Link tab). They then approve <b>Directory</b> and <b>Analytics</b> separately. Their password is never shared.</p>
+          <div class="grid2">
+            <div class="field"><label for="pairCode">Pairing code</label><input id="pairCode" placeholder="K7M2-9QXA" autocomplete="off" style="text-transform:uppercase;letter-spacing:2px"></div>
+            <div class="field"><label for="purpose">Purpose of the request</label><input id="purpose" placeholder="Why you want to connect"></div>
+          </div>
+          <button class="btn pri" id="connectBtn" type="button" style="margin-top:16px">Connect server</button>
+          <div class="msg" id="connMsg" role="status"></div>
+        </div>
+        <div id="cards"></div>
+      </section>
+      <section id="tab-trading" hidden>
+        <div class="stats" id="trStats"></div>
+        <div class="panel">
+          <div class="tr-head"><div><h2>Vacancy market</h2><p class="sub">Historical vacancy analytics from branches that approved <b>Analytics</b>. Drag to move through time.</p></div>
+            <select id="trMetric" aria-label="Chart metric"></select></div>
+          <div class="tools" id="trTf" role="group" aria-label="Timeframe"></div>
+          <div class="tools" id="trCustom" hidden><label class="det" for="trFrom">From</label><input type="date" id="trFrom"><label class="det" for="trTo">To</label><input type="date" id="trTo"><button class="btn sm pri" id="trApply" type="button">Apply</button></div>
+          <div class="tools" id="trBranches" role="group" aria-label="Dormitories"></div>
+          <div class="tools" id="trLegend"></div>
+          <div class="chartwrap"><canvas id="trCanvas" aria-label="Vacancy chart"></canvas></div>
+          <div class="tools"><button class="btn sm" id="trOut" type="button">− Zoom out</button><button class="btn sm" id="trIn" type="button">+ Zoom in</button><button class="btn sm pri" id="trReset" type="button">Reset to latest</button><span class="det" id="trNote"></span></div>
+        </div>
+      </section>
+      <section id="tab-inbox" hidden></section>
+      <section id="tab-accounts" hidden></section>
+      <section id="tab-server" hidden></section>
+      <section id="tab-security" hidden></section>
+    </div>
+  </div>
+</div>
+
+<script src="firebase-config.js"></script>
+<script src="central-ui.js"></script>
+<script src="central-chart.js"></script>
+<script type="module">
+import {initializeApp} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {getAuth,onAuthStateChanged,signInWithEmailAndPassword,signInWithPopup,GoogleAuthProvider,sendPasswordResetEmail,signOut,setPersistence,browserSessionPersistence} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import {getFirestore,doc,getDoc,setDoc,deleteDoc,collection,onSnapshot,query,orderBy,limit,where,getDocs,Timestamp,addDoc,serverTimestamp} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const {$,esc,icon,toast,ask,when,ago,isStale,kind,pct,authErr,dormCard}=CUI;
+const show=v=>{["authView","deniedView","dash"].forEach(id=>$(id).hidden=id!==v);if(v==="dash")$("dash").style.display=""};
+const say=(el,t,err)=>{el.textContent=t;el.classList.toggle("err",!!err)};
+
+CUI.theme($("themeA"));CUI.theme($("themeB"));
+$("heroLogo").innerHTML=$("sideLogo").innerHTML=icon("building");
+$("gIco").innerHTML=icon("google").replace(/<svg[^>]*>|<\/svg>/g,"");
+$("feat").innerHTML=[["plug","Connect independent dormitory servers"],["shield","Two separate permissions, decided by each branch"],["trend","Combined vacancy and occupancy analytics"]].map(([i,t])=>`<div><span>${icon(i)}</span>${t}</div>`).join("");
+
+const cfg=window.FIREBASE_CONFIG;
+if(!cfg||cfg.apiKey==="YOUR_API_KEY"){show("deniedView");$("deniedTitle").textContent="Setup needed";$("deniedText").textContent="firebase-config.js has no Firebase settings yet.";$("deniedUid").hidden=true;$("deniedOut").hidden=true;throw new Error("no config")}
+
+const app=initializeApp(cfg),auth=getAuth(app),db=getFirestore(app,"central");   // same project + API key, separate database
+let user=null,unsubs=[],branches=[],dir={},audit=[],admins=[],loaded=false,painted=false,tab="overview";
+
+/* ---------- sign in ---------- */
+$("signInBtn").onclick=async()=>{
+  const email=$("email").value.trim(),pw=$("pw").value;
+  if(!email||!pw)return say($("authMsg"),"Enter your email and password.",1);
+  try{await setPersistence(auth,browserSessionPersistence);await signInWithEmailAndPassword(auth,email,pw)}catch(e){say($("authMsg"),authErr(e),1)}
+};
+$("pw").onkeydown=e=>{if(e.key==="Enter")$("signInBtn").click()};
+$("googleBtn").onclick=async()=>{try{await setPersistence(auth,browserSessionPersistence);await signInWithPopup(auth,new GoogleAuthProvider())}catch(e){say($("authMsg"),authErr(e),1)}};
+$("forgotBtn").onclick=async()=>{const email=$("email").value.trim();if(!email)return say($("authMsg"),"Enter your email first.",1);try{await sendPasswordResetEmail(auth,email);say($("authMsg"),"Password reset email sent.")}catch(e){say($("authMsg"),authErr(e),1)}};
+async function diagnose(){
+  try{
+    const r=await fetch("https://firestore.googleapis.com/v1/projects/"+cfg.projectId+"/databases/central/documents/superAdmins/check?key="+encodeURIComponent(cfg.apiKey));
+    const j=await r.json().catch(()=>({})),m=(j.error&&j.error.message)||"";
+    if(r.status===404||/does not exist/i.test(m))return "CHECK RESULT: the 'central' database does NOT exist in project "+cfg.projectId+". Do steps 1 to 3.";
+    if(r.status===401||r.status===403)return "CHECK RESULT: the 'central' database exists. If you haven't published the rules yet, do step 4. If you have, reload and try another browser.";
+    return "CHECK RESULT: unexpected reply ("+r.status+"). "+m;
+  }catch(e){return "CHECK RESULT: your browser could not reach Firebase at all. Turn off ad blockers or VPN, or try another network or browser."}
+}
+const out=()=>signOut(auth);$("outBtn").onclick=out;$("deniedOut").onclick=out;
+$("reloadBtn").onclick=()=>location.reload();
+$("copyRules").onclick=async()=>{try{const r=await fetch("central.rules");if(!r.ok)throw 0;await navigator.clipboard.writeText(await r.text());toast("Rules copied. Paste them in the Rules tab.")}catch(e){toast("Could not copy. Open central.rules from your project instead.",1)}};
+
+onAuthStateChanged(auth,async u=>{
+  stopAll();user=u;$("deniedSteps").hidden=true;
+  if(!u)return show("authView");
+  try{
+    const s=await getDoc(doc(db,"superAdmins",u.uid));
+    if(!s.exists()){
+      $("deniedTitle").textContent="Not a Super Admin";
+      $("deniedText").textContent="This account ("+(u.email||"no email")+") isn't authorized. If you own this platform, create a document in the central database at superAdmins/ using this ID as the document ID:";
+      $("deniedUid").textContent=u.uid;$("deniedUid").hidden=false;return show("deniedView");
+    }
+  }catch(e){
+    $("deniedTitle").textContent="Central database not ready";
+    const code=e.code||e.message,missing=/unavailable|not-found/.test(code);
+    $("deniedText").textContent=missing
+      ?"This page can't reach a database named 'central' in project "+cfg.projectId+". Most often it hasn't been created yet. (If you did create it, check your internet connection, VPN or ad blocker.) Error: "+code
+      :code==="permission-denied"
+        ?"The 'central' database exists, but its security rules haven't been published yet. Do steps 4 and 5."
+        :"Could not read the central database. Error: "+code;
+    $("deniedUid").hidden=true;$("deniedSteps").hidden=false;
+    diagnose().then(t=>{$("deniedText").textContent+="  "+t});
+    $("openConsole").href="https://console.firebase.google.com/project/"+cfg.projectId+"/firestore/databases";
+    return show("deniedView");
+  }
+  $("who").textContent=u.email||"Signed in";show("dash");startAll();render();
+});
+
+/* ---------- live data ---------- */
+function stopAll(){unsubs.forEach(f=>f());unsubs=[];branches=[];dir={};audit=[];admins=[];loaded=false;painted=false;clearInterval(trTimer)}
+function startAll(){
+  unsubs.push(onSnapshot(collection(db,"branches"),snap=>{branches=snap.docs.map(d=>({id:d.id,...d.data()}));loaded=true;render()},e=>{loaded=true;say($("connMsg"),"Cannot read branches: "+(e.code||e.message),1);render()}));
+  unsubs.push(onSnapshot(collection(db,"directory"),snap=>{dir={};snap.docs.forEach(d=>dir[d.id]=d.data());render()},()=>{}));
+  unsubs.push(onSnapshot(collection(db,"superAdmins"),snap=>{admins=snap.docs.map(d=>({id:d.id,...d.data()}));render()},()=>{}));
+  unsubs.push(onSnapshot(query(collection(db,"audit"),orderBy("at","desc"),limit(60)),snap=>{audit=snap.docs.map(d=>d.data());render()},()=>{}));
+}
+const log=(action,branch,detail)=>addDoc(collection(db,"audit"),{actorUid:user.uid,actorEmail:user.email||"",action,branch:branch||"",detail:detail||"",at:serverTimestamp()}).catch(()=>{});
+
+/* ---------- connect / disconnect ---------- */
+$("connectBtn").onclick=async()=>{
+  const code=$("pairCode").value.trim().toUpperCase(),purpose=$("purpose").value.trim(),btn=$("connectBtn");
+  if(!code)return say($("connMsg"),"Enter the pairing code.",1);
+  if(!purpose)return say($("connMsg"),"Enter a purpose for the request.",1);
+  btn.disabled=true;say($("connMsg"),"Connecting…");
+  try{
+    const p=await getDoc(doc(db,"pairing",code));
+    if(!p.exists())return say($("connMsg"),"Code not found, already used, or expired.",1);
+    const d=p.data();
+    if(d.expiresAt.toMillis()<Date.now())return say($("connMsg"),"That code has expired. Ask the Branch Admin for a new one.",1);
+    if(branches.some(b=>b.id===d.ownerUid))return say($("connMsg"),"This dormitory is already connected. Disconnect it first to send a new request.",1);
+    await setDoc(doc(db,"branches",d.ownerUid),{ownerUid:d.ownerUid,dormName:d.dormName,location:d.location||"",purpose,pairingCode:code,requestedBy:user.uid,dirStatus:"pending",analyticsStatus:"pending",createdAt:serverTimestamp()});
+    await deleteDoc(doc(db,"pairing",code)).catch(()=>{});
+    log("CONNECTION_REQUESTED",d.dormName,purpose);
+    $("pairCode").value="";$("purpose").value="";say($("connMsg"),"");
+    toast("Request sent to "+d.dormName);
+  }catch(e){say($("connMsg"),"Could not connect: "+(e.code||e.message),1)}
+  finally{btn.disabled=false}
+};
+document.addEventListener("click",async e=>{
+  const b=e.target.closest("[data-off]");if(!b)return;
+  const br=branches.find(x=>x.id===b.dataset.off);if(!br)return;
+  if(!await ask("Disconnect "+br.dormName+"?","Its directory listing and analytics access stop immediately. A new request and pairing code are needed to reconnect.","Disconnect",true))return;
+  try{await deleteDoc(doc(db,"directory",br.id)).catch(()=>{});await deleteDoc(doc(db,"branches",br.id));log("DISCONNECTED",br.dormName,"");toast("Disconnected "+br.dormName)}catch(err){toast("Failed: "+(err.code||err.message),1)}
+});
+
+/* ---------- rendering ---------- */
+const TABS=[["overview","grid","Overview"],["dorms","building","Dormitories"],["trading","trend","Trading"],["inbox","inbox","Inbox"],["accounts","users","Accounts"],["server","plug","Server Details"],["security","shield","Security"]];
+const label={approved:"Approved",pending:"Pending",rejected:"Rejected",revoked:"Revoked"};
+const live=b=>b.dirStatus==="approved"&&dir[b.id]?dir[b.id]:null;
+const group=b=>{const s=live(b);return s?kind(s.vacant):"off"};
+const statChip=(t,s)=>`<span class="chip ${s}">${t}: ${label[s]||esc(s)}</span>`;
+const foot=b=>`<div class="chips">${statChip("Directory",b.dirStatus)}${statChip("Analytics",b.analyticsStatus)}</div><div class="foot"><span class="det">Requested ${when(b.createdAt)}</span><button class="btn sm danger" data-off="${esc(b.id)}">Disconnect</button></div>`;
+function offCard(b){
+  const t=b.dirStatus==="approved"?"Approved. Waiting for the first sync from the branch.":b.dirStatus==="pending"?"Waiting for the Branch Admin to decide.":"Directory permission "+(label[b.dirStatus]||b.dirStatus).toLowerCase()+". No vacancy data is shown.";
+  return `<article class="dc${painted?"":" rise"}"><div class="dhead"><div><h3>${esc(b.dormName)}</h3><div class="loc">${icon("pin")}${esc(b.location||"Location not provided")}</div></div></div><p class="det" style="margin:18px 0">${t}</p>${foot(b)}</article>`;
+}
+function render(){
+  if($("dash").hidden)return;
+  const pending=branches.filter(b=>b.dirStatus==="pending"||b.analyticsStatus==="pending").length;
+  const inb=inboxItems(),unread=inb.filter(m=>m.at&&m.at.toMillis()>seenAt()).length;
+  $("nav").innerHTML=TABS.map(([k,i,t])=>`<button data-tab="${k}" class="${tab===k?"on":""}">${icon(i)}${t}${k==="dorms"&&pending?`<span class="badge">${pending}</span>`:""}${k==="inbox"&&unread&&tab!=="inbox"?`<span class="badge">${unread}</span>`:""}</button>`).join("");
+  $("title").textContent=TABS.find(x=>x[0]===tab)[2];
+  TABS.forEach(([k])=>$("tab-"+k).hidden=k!==tab);
+
+  const sections=[["avail","Available vacancies"],["limited","Limited vacancies"],["full","Fully occupied"],["off","Awaiting approval, revoked or no data"]];
+  $("cards").innerHTML=!loaded?`<div class="cards"><div class="sk"></div><div class="sk"></div></div>`
+    :branches.length?sections.map(([k,t])=>{const l=branches.filter(b=>group(b)===k).sort((a,b)=>((live(b)||{}).vacant||0)-((live(a)||{}).vacant||0));
+      return l.length?`<div class="sect">${t} · ${l.length}</div><div class="cards">${l.map(b=>k==="off"?offCard(b):dormCard(b,live(b),foot(b),!painted)).join("")}</div>`:""}).join("")
+    :`<div class="empty">${icon("building")}<div><b>No dormitories connected yet</b></div>Enter a pairing code above to send your first request.</div>`;
+  if(loaded)painted=true;
+
+  const L=branches.filter(b=>live(b)),sum=k=>L.reduce((a,b)=>a+(live(b)[k]||0),0),T=sum("total"),V=sum("vacant"),O=sum("occupied"),stale=L.filter(b=>isStale(live(b)));
+  const st=(i,c,n,t)=>`<div class="stat"><span class="ico ${c}">${icon(i)}</span><div><b>${n}</b><span>${t}</span></div></div>`;
+  $("tab-overview").innerHTML=`<div class="stats">${st("building","",branches.length,"Registered dormitories")}${st("inbox","g",L.length,"Publishing to directory")}${st("bed","r",V,"Combined vacant beds")}${st("users","",O,"Combined occupied beds")}${st("trend","a",T?(V/T*100).toFixed(1)+"%":"—","Combined vacancy rate")}${st("clock","a",pending,"Awaiting a decision")}</div>
+  <div class="grid2"><div class="panel"><h2>Occupancy by dormitory</h2><p class="sub">Share of beds occupied, from approved directory data.</p><div class="bars">${L.length?L.map(b=>{const s=live(b);return `<div class="bar-row"><b>${esc(b.dormName)}</b><small>${s.occupied}/${s.total} beds · ${pct(s)}%</small><div class="track"><div class="fill" style="width:${pct(s)}%"></div></div></div>`}).join(""):`<div class="empty" style="padding:24px">No directory data yet.</div>`}</div></div>
+  <div class="panel"><h2>Needs attention</h2><p class="sub">Open requests and out-of-date branches.</p><div class="bars">${[...branches.filter(b=>b.dirStatus==="pending"||b.analyticsStatus==="pending").map(b=>`<div class="bar-row"><b>${esc(b.dormName)}</b> <span class="chip pending">Waiting for approval</span></div>`),...stale.map(b=>`<div class="bar-row"><b>${esc(b.dormName)}</b> <span class="chip pending">No sync since ${ago(live(b).updatedAt)}</span></div>`)].join("")||`<div class="empty" style="padding:24px">Nothing needs your attention.</div>`}</div></div></div>`;
+
+  renderInbox();renderAccounts();renderServer();
+  if(tab==="trading")trEnter();
+  const cls=a=>/REVOK|REJECT|DISCONN/.test(a)?"revoked":/APPROV/.test(a)?"approved":"pending";
+  $("tab-security").innerHTML=`<div class="panel"><h2>Audit log</h2><p class="sub">Every connection, decision and disconnection. Entries can't be edited or deleted.</p>${audit.length?`<div style="overflow-x:auto;margin-top:12px"><table><thead><tr><th>When</th><th>Who</th><th>Action</th><th>Dormitory</th><th>Detail</th></tr></thead><tbody>${audit.map(a=>`<tr><td>${when(a.at)}</td><td>${esc(a.actorEmail)}</td><td><span class="chip ${cls(a.action)}">${esc(a.action.replace(/_/g," "))}</span></td><td>${esc(a.branch)}</td><td>${esc(a.detail)}</td></tr>`).join("")}</tbody></table></div>`:`<div class="empty" style="margin-top:14px">${icon("shield")}<div>No activity yet.</div></div>`}</div>`;
+}
+$("nav").addEventListener("click",e=>{const b=e.target.closest("[data-tab]");if(b){if(tab==="inbox")localStorage.setItem("inboxSeen",String(Date.now()));tab=b.dataset.tab;render();scrollTo({top:0})}});
+
+/* ---------- inbox (decisions and alerts from branches) ---------- */
+const seenAt=()=>Number(localStorage.getItem("inboxSeen")||0);
+function inboxItems(){
+  return audit.filter(a=>a.actorUid!==(user&&user.uid)&&/^(PERMISSION_|BRANCH_)/.test(a.action));
+}
+function renderInbox(){
+  const items=inboxItems(),seen=seenAt();
+  const stale=branches.filter(b=>live(b)&&isStale(live(b)));
+  const title=a=>{const w=/Directory/i.test(a.detail)?"Directory":"Analytics";
+    if(a.action==="PERMISSION_APPROVED")return w+" permission approved";
+    if(a.action==="PERMISSION_REJECTED")return w+" permission rejected";
+    if(a.action==="PERMISSION_REVOKED")return "Access revoked: "+w.toLowerCase();
+    if(a.action==="BRANCH_DISCONNECTED")return "Branch disconnected itself";return a.action};
+  const sub=a=>({PERMISSION_APPROVED:"Approval received",PERMISSION_REJECTED:"Rejected by Branch Admin",PERMISSION_REVOKED:"Branch Admin action",BRANCH_DISCONNECTED:"Branch Admin action"}[a.action]||"");
+  const row=(i,t,s,time,isNew)=>`<div class="msgrow${isNew?" new":""}"><span class="ico">${icon(i)}</span><div><b>${esc(t)}</b><small>${esc(s)}</small></div><time>${time}</time></div>`;
+  const n=items.filter(m=>m.at&&m.at.toMillis()>seen).length;
+  $("tab-inbox").innerHTML=`<div class="panel"><h2>Central inbox</h2><p class="sub">${n?n+" unread. ":""}Decisions and alerts from Branch Admins. Gmail notifications can be connected later; this inbox works without it.</p>
+  <div style="margin-top:10px">${[...stale.map(b=>row("clock","Sync alert: "+b.dormName,"No update from this branch for over 30 minutes",ago(live(b).updatedAt),false)),...items.map(a=>row(/REJECT|REVOK|DISCONN/.test(a.action)?"shield":"inbox",title(a),a.branch+" • "+sub(a),when(a.at),a.at&&a.at.toMillis()>seen))].join("")||`<div class="empty">${icon("inbox")}<div><b>Nothing here yet</b></div>Branch decisions will appear as soon as they are made.</div>`}</div></div>`;
+}
+
+/* ---------- accounts ---------- */
+function renderAccounts(){
+  $("tab-accounts").innerHTML=`<div class="panel"><h2>Super Admin accounts</h2><p class="sub">Accounts allowed to open this portal. To add someone, ask them to sign in once; their screen shows a user ID.</p>
+  <div style="overflow-x:auto;margin-top:12px"><table><thead><tr><th>Email</th><th>User ID</th><th></th></tr></thead><tbody>${admins.map(a=>`<tr><td>${esc(a.email||"—")}${a.id===user.uid?' <span class="chip approved">You</span>':""}</td><td><code>${esc(a.id.slice(0,10))}…</code></td><td style="text-align:right">${a.id===user.uid?"":`<button class="btn sm danger" data-rm="${esc(a.id)}">Remove</button>`}</td></tr>`).join("")||`<tr><td colspan="3">No accounts listed.</td></tr>`}</tbody></table></div>
+  <div class="row3" style="margin-top:18px"><div class="field" style="margin:0"><label for="newUid">User ID of the new Super Admin</label><input id="newUid" autocomplete="off"></div><div class="field" style="margin:0"><label for="newMail">Their email (for your reference)</label><input id="newMail" type="email"></div><button class="btn pri" id="addAdmin" type="button">Authorize</button></div></div>
+  <div class="panel"><h2>Branch Admin accounts</h2><p class="sub">Each connected dormitory is one Branch Admin account. Disconnecting ends the connection and stops all data sharing from that branch.</p>
+  <div style="overflow-x:auto;margin-top:12px"><table><thead><tr><th>Dormitory</th><th>Account ID</th><th>Permissions</th><th></th></tr></thead><tbody>${branches.map(b=>`<tr><td>${esc(b.dormName)}</td><td><code>${esc(b.id.slice(0,10))}…</code></td><td>${statChip("Directory",b.dirStatus)} ${statChip("Analytics",b.analyticsStatus)}</td><td style="text-align:right"><button class="btn sm danger" data-off="${esc(b.id)}">Disconnect</button></td></tr>`).join("")||`<tr><td colspan="4">No connected branches.</td></tr>`}</tbody></table></div>
+  <p class="det" style="margin-top:12px">Blocking or kicking a live login session needs a server component, which this project doesn't have yet. Disconnecting a branch is the strongest control available here.</p></div>`;
+}
+document.addEventListener("click",async e=>{
+  if(e.target.id==="addAdmin"){
+    const uid=$("newUid").value.trim(),email=$("newMail").value.trim();
+    if(!uid||uid.length<10)return toast("Enter the user ID shown on their screen.",1);
+    try{await setDoc(doc(db,"superAdmins",uid),{email,addedBy:user.uid,addedAt:serverTimestamp()});log("SUPER_ADMIN_ADDED","",email||uid);toast("Account authorized")}catch(x){toast("Failed: "+(x.code||x.message),1)}
+  }
+  const r=e.target.closest("[data-rm]");
+  if(r&&await ask("Remove this Super Admin?","They lose access to this portal immediately.","Remove",true)){
+    try{await deleteDoc(doc(db,"superAdmins",r.dataset.rm));log("SUPER_ADMIN_REMOVED","",r.dataset.rm);toast("Removed")}catch(x){toast("Failed: "+(x.code||x.message),1)}
+  }
+});
+
+/* ---------- server details (read-only) ---------- */
+function renderServer(){
+  const key=cfg.apiKey||"",kv=(k,v)=>`<div><small>${k}</small><b>${v}</b></div>`;
+  $("tab-server").innerHTML=`<div class="panel"><h2>Central server</h2><p class="sub">Visible to Super Admins only.</p><div class="kv">${kv("Server ID","CENTRAL-"+esc(cfg.projectId))}${kv("Database","central (Firestore)")}${kv("Status",'<span class="chip approved">Connected</span>')}${kv("Access","Super Admin only")}${kv("Credentials","Protected · key ending "+esc(key.slice(-4)))}${kv("Auth domain",esc(cfg.authDomain||"—"))}</div></div>
+  <div class="panel"><h2>Connected branch servers</h2><p class="sub">Read-only. You can see a branch's connection state, but only its Branch Admin can change it.</p>
+  <div style="overflow-x:auto;margin-top:12px"><table><thead><tr><th>Dormitory</th><th>Branch ID</th><th>Connection</th><th>Last sync</th><th>Permissions</th></tr></thead><tbody>${branches.map(b=>{const s=live(b),c=!s?`<span class="chip pending">${b.dirStatus==="approved"?"Awaiting first sync":"Not publishing"}</span>`:isStale(s)?'<span class="chip pending">Outdated</span>':'<span class="chip approved">Online</span>';return `<tr><td>${esc(b.dormName)}</td><td><code>${esc(b.id.slice(0,10))}…</code></td><td>${c}</td><td>${s?ago(s.updatedAt):"—"}</td><td>${statChip("Directory",b.dirStatus)} ${statChip("Analytics",b.analyticsStatus)}</td></tr>`}).join("")||`<tr><td colspan="5">No connected branches.</td></tr>`}</tbody></table></div></div>`;
+}
+
+/* ---------- trading analytics ---------- */
+const TFS=["1D","1W","1M","3M","6M","1Y","ALL","Custom"],DAY=864e5;
+const SPAN={"1D":DAY,"1W":7*DAY,"1M":30*DAY,"3M":91*DAY,"6M":182*DAY,"1Y":365*DAY};
+const METRICS={vacant:["Vacant beds",s=>s.vacant,0],occupied:["Occupied beds",s=>s.occupied,0],vacRate:["Vacancy rate %",s=>s.total?s.vacant/s.total*100:null,1],occRate:["Occupancy rate %",s=>s.total?s.occupied/s.total*100:null,1],male:["Male vacancy",s=>s.maleVacant,0],female:["Female vacancy",s=>s.femaleVacant,0],student:["Student vacancy",s=>s.studentVacant,0],reviewee:["Reviewee vacancy",s=>s.revieweeVacant,0],aircon:["Aircon vacancy",s=>s.acVacant,0]};
+const COLORS=["#4f46e5","#e5484d","#12a37a","#e5a13a","#0ea5e9","#a855f7","#ec4899","#64748b"];
+const tr={tf:"1W",from:null,to:null,metric:"vacant",sel:new Set(),combined:null,raw:{},exh:{},chart:null,key:"",loading:false};
+let trTimer=null;
+const authBr=()=>branches.filter(b=>b.analyticsStatus==="approved");
+const trStart=()=>tr.tf==="Custom"?tr.from:tr.tf==="ALL"?0:Date.now()-SPAN[tr.tf];
+const trEnd=()=>tr.tf==="Custom"&&tr.to?tr.to:Date.now();
+
+function trEnter(){
+  const A=authBr(),key=A.map(b=>b.id).join(",");
+  if(!tr.chart){
+    tr.chart=CChart.create($("trCanvas"),{needOlder:trOlder});
+    $("trMetric").innerHTML=Object.entries(METRICS).map(([k,v])=>`<option value="${k}">${v[0]}</option>`).join("");
+    $("trMetric").onchange=e=>{tr.metric=e.target.value;trBuild(false)};
+    $("trTf").onclick=e=>{const b=e.target.closest("[data-tf]");if(!b)return;tr.tf=b.dataset.tf;$("trCustom").hidden=tr.tf!=="Custom";if(tr.tf!=="Custom")trLoad();trControls()};
+    $("trApply").onclick=()=>{const a=$("trFrom").valueAsDate,b=$("trTo").valueAsDate;if(!a||!b||a>b)return toast("Pick a valid date range.",1);tr.from=a.getTime();tr.to=b.getTime()+DAY-1;trLoad()};
+    $("trBranches").onclick=e=>{const b=e.target.closest("[data-b]");if(!b)return;if(b.dataset.b==="all")tr.combined=!tr.combined;else{const id=b.dataset.b;tr.sel.has(id)?tr.sel.delete(id):tr.sel.add(id)}trControls();trBuild(false)};
+    $("trIn").onclick=()=>tr.chart.zoom(.7);$("trOut").onclick=()=>tr.chart.zoom(1.4);
+    $("trReset").onclick=()=>{tr.chart.setWindow(trStart()||trMin()||Date.now()-SPAN["1W"],trEnd())};
+    trTimer=setInterval(()=>{if(tab==="trading")trLoad(false)},300000);
+  }
+  if(key!==tr.key){
+    tr.key=key;tr.sel=new Set(A.length===1?[A[0].id]:[]);tr.combined=A.length>1;
+    trControls();trLoad();
+  }
+}
+function trControls(){
+  const A=authBr();
+  $("trTf").innerHTML=TFS.map(t=>`<button class="chip-f ${tr.tf===t?"on":""}" data-tf="${t}">${t}</button>`).join("");
+  $("trBranches").innerHTML=A.length?(A.length>1?`<button class="chip-f ${tr.combined?"on":""}" data-b="all">All dormitories (combined)</button>`:"")+A.map(b=>`<button class="chip-f ${tr.sel.has(b.id)?"on":""}" data-b="${esc(b.id)}">${esc(b.dormName)}</button>`).join(""):"";
+}
+const trMin=()=>Math.min(...Object.values(tr.raw).filter(a=>a.length).map(a=>a[0].t),Infinity);
+
+async function trLoad(){
+  const A=authBr();
+  if(!A.length){$("trStats").innerHTML="";$("trLegend").innerHTML="";$("trNote").textContent="";tr.chart.setData([],{});
+    $("trBranches").innerHTML=`<div class="empty" style="width:100%">${icon("trend")}<div><b>No dormitory has approved Analytics yet</b></div>Charts appear after a Branch Admin approves "Share vacancy analytics data" and about 15 minutes of data has been recorded.</div>`;return}
+  if(tr.loading)return;tr.loading=true;
+  const a=trStart();
+  await Promise.all(A.map(async b=>{
+    try{
+      const col=collection(db,"branches",b.id,"snapshots");
+      const snap=await getDocs(a?query(col,where("capturedAt",">=",Timestamp.fromMillis(a)),orderBy("capturedAt","asc"),limit(5000)):query(col,orderBy("capturedAt","asc"),limit(5000)));
+      tr.raw[b.id]=snap.docs.map(d=>{const x=d.data();return {...x,t:x.capturedAt.toMillis()}});
+      tr.exh[b.id]=!a&&snap.size<5000;
+    }catch(e){tr.raw[b.id]=[];tr.exh[b.id]=true;toast("Could not read analytics for "+b.dormName+" ("+(e.code||e.message)+")",1)}
+  }));
+  tr.loading=false;trBuild(true);
+}
+async function trOlder(){
+  const A=authBr().filter(b=>!tr.exh[b.id]);if(!A.length||tr.loading)return;tr.loading=true;
+  await Promise.all(A.map(async b=>{
+    const cur=tr.raw[b.id]||[],first=cur.length?cur[0].t:Date.now();
+    try{
+      const snap=await getDocs(query(collection(db,"branches",b.id,"snapshots"),where("capturedAt","<",Timestamp.fromMillis(first)),orderBy("capturedAt","desc"),limit(1000)));
+      if(snap.empty)tr.exh[b.id]=true;else tr.raw[b.id]=snap.docs.map(d=>{const x=d.data();return {...x,t:x.capturedAt.toMillis()}}).reverse().concat(cur);
+    }catch(e){tr.exh[b.id]=true}
+  }));
+  tr.loading=false;trBuild(false);
+}
+function trBucket(){const span=tr.tf==="Custom"&&tr.from?trEnd()-tr.from:SPAN[tr.tf]||400*DAY;return span<=2*DAY?9e5:span<=14*DAY?36e5:span<=120*DAY?216e5:DAY}
+function trBuild(resetWindow){
+  const A=authBr(),[mName,f,dec]=METRICS[tr.metric],bs=trBucket(),gap=Math.max(bs*3,36e5),bk=t=>Math.floor(t/bs)*bs;
+  const perBranch={};A.forEach(b=>{const m=new Map();(tr.raw[b.id]||[]).forEach(s=>m.set(bk(s.t),s));perBranch[b.id]=m});
+  const series=[],start=trStart();
+  const pts=(entries)=>{const out=[];entries.forEach(([t,v],i)=>{out.push({t,v});const n=entries[i+1];if(n&&n[0]-t>gap)out.push({t:t+gap/2,v:null})});return out};
+  if(tr.combined&&A.length>1){
+    const keys=[...new Set(A.flatMap(b=>[...perBranch[b.id].keys()]))].sort((x,y)=>x-y),last={};
+    const ent=[];
+    keys.forEach(k=>{const sum={total:0,vacant:0,occupied:0,maleVacant:0,femaleVacant:0,studentVacant:0,revieweeVacant:0,acVacant:0};let ok=true;
+      A.forEach(b=>{const m=perBranch[b.id];if(m.has(k))last[b.id]={t:k,s:m.get(k)};const l=last[b.id];if(!l||k-l.t>gap){ok=false;return}Object.keys(sum).forEach(x=>sum[x]+=l.s[x]||0)});
+      if(ok){const v=f(sum);if(v!=null)ent.push([k,v])}});
+    series.push({name:"Combined",color:"#f5b84b",combined:true,points:pts(ent)});
+  }
+  A.forEach((b,i)=>{if(!tr.sel.has(b.id))return;const ent=[...perBranch[b.id].entries()].sort((x,y)=>x[0]-y[0]).map(([t,s])=>[t,f(s)]).filter(e=>e[1]!=null);series.push({name:b.dormName,color:COLORS[i%COLORS.length],points:pts(ent)})});
+  const fmt=v=>(dec?v.toFixed(1):String(Math.round(v)))+(tr.metric.endsWith("Rate")?"%":"");
+  const mins=trMin(),now=Date.now();
+  tr.chart.setData(series,{fmt,latest:now,dataMin:isFinite(mins)?mins:now,exhausted:A.every(b=>tr.exh[b.id])});
+  if(resetWindow)tr.chart.setWindow(start||(isFinite(mins)?mins:now-SPAN["1W"]),trEnd());
+  // legend with trading-style indicators over the selected period
+  $("trLegend").innerHTML=series.map(s=>{const v=s.points.filter(p=>p.v!=null&&p.t>=(start||0));if(!v.length)return `<span class="lg"><i style="background:${s.color}"></i>${esc(s.name)} <span class="flat">no data</span></span>`;
+    const d=v[v.length-1].v-v[0].v,c=Math.abs(d)<.05?"flat":d>0?"up":"down",ar=c==="flat"?"FLAT →":d>0?"UP ↑":"DOWN ↓";
+    return `<span class="lg"><i style="background:${s.color}"></i>${esc(s.name)} <b>${fmt(v[v.length-1].v)}</b> <span class="${c}">${ar}${c==="flat"?"":" "+(d>0?"+":"")+(dec?d.toFixed(1):Math.round(d))}</span></span>`}).join("")||`<span class="det">Select a dormitory above to draw its line.</span>`;
+  // summary tiles from each branch's latest recorded snapshot
+  const latest=A.map(b=>(tr.raw[b.id]||[]).slice(-1)[0]).filter(Boolean),sum=k=>latest.reduce((x,s)=>x+(s[k]||0),0),T=sum("total"),V=sum("vacant");
+  const st=(i,c,n,t)=>`<div class="stat"><span class="ico ${c}">${icon(i)}</span><div><b>${n}</b><span>${t}</span></div></div>`;
+  $("trStats").innerHTML=st("bed","r",V,"Combined vacant beds")+st("users","",sum("occupied"),"Combined occupied beds")+st("trend","a",T?(V/T*100).toFixed(1)+"%":"—","Combined vacancy rate")+st("building","g",A.length,"Dormitories sharing analytics");
+  $("trNote").textContent=latest.length?"Showing recorded data only. Missing periods appear as gaps.":"No snapshots recorded yet. The first appears within about 15 minutes of approval while the Branch Admin has the app open.";
+}
+</script>
+</body>
+</html>
